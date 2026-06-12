@@ -2,9 +2,8 @@
 
 import { defineConfig } from "sanity";
 import { structureTool } from "sanity/structure";
-import { visionTool } from "@sanity/vision";
 import { media } from "sanity-plugin-media";
-import { apiVersion, dataset, projectId } from "./sanity/env";
+import { dataset, projectId } from "./sanity/env";
 import { schemaTypes } from "./sanity/schemaTypes";
 
 const SETTINGS_SINGLETONS = [
@@ -55,7 +54,6 @@ export default defineConfig({
               ),
           ]),
     }),
-    visionTool({ defaultApiVersion: apiVersion }),
     media(),
   ],
   schema: {
