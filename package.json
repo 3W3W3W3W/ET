@@ -1,0 +1,26 @@
+{
+  "name": "eric-tsui",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@sanity/image-url": "^2.1.1",
+    "@sanity/vision": "^5.25.0",
+    "next": "^15.0.0",
+    "next-sanity": "^10.1.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sanity": "^4.22.0",
+    "sanity-plugin-media": "^4.3.0",
+    "styled-components": "^6.4.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.4",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^4.2.4"
+  }
+}

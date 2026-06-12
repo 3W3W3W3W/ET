@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+:root {
+  --font-primary: Arial, sans-serif;
+  --font-secondary: "Times New Roman", Times, serif;
+
+  --color-main: #4a4a4a;
+  --color-secondary: #181818;
+  --color-highlight: #AD0900;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+  color: #fff;
+  font-family: var(--font-primary);
+  font-weight: 400;
+  font-size: 11px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
