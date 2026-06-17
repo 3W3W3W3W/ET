@@ -196,8 +196,23 @@ export default function HomeClient({ information, clients, projects, tags, portf
       const dir = e.deltaY > 0 ? 1 : -1;
       setImageIndex((i) => i + dir);
     };
+    let touchStartY = null;
+    const onTouchStart = (e) => { touchStartY = e.touches[0].clientY; };
+    const onTouchEnd = (e) => {
+      if (touchStartY === null) return;
+      const diff = touchStartY - e.changedTouches[0].clientY;
+      if (Math.abs(diff) < 30) return;
+      setImageIndex((i) => i + (diff > 0 ? 1 : -1));
+      touchStartY = null;
+    };
     window.addEventListener("wheel", onWheel, { passive: false });
-    return () => window.removeEventListener("wheel", onWheel);
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
   }, [active, projectPinned, projectImages.length]);
 
   // Pinned: scrolling steps through the current project's images first, then
@@ -263,8 +278,9 @@ export default function HomeClient({ information, clients, projects, tags, portf
       displayedIndexTimer.current = setTimeout(() => {
         setDisplayedImageIndex(imageIndex);
         setCountVisible(true);
-      }, 700);
+      }, 1400);
     } else {
+      setCountVisible(true);
       setDisplayedImageIndex(imageIndex);
     }
     return () => clearTimeout(displayedIndexTimer.current);
@@ -405,7 +421,7 @@ export default function HomeClient({ information, clients, projects, tags, portf
         <div className={`fixed bottom-0 left-0 right-0 h-[30px] px-[15px] flex items-center justify-between text-white z-20 select-none pointer-events-none transition-opacity duration-150 ${active === "Information" ? "opacity-20" : "opacity-100"}`}>
           <span>{activeProject.title}</span>
           {projectImages.length > 0 && (
-            <span className={`transition-opacity duration-300 ${countVisible ? "opacity-100" : "opacity-0"}`}>
+            <span className={`transition-opacity duration-[1400ms] ${countVisible ? "opacity-100" : "opacity-0"}`}>
               ({(((displayedImageIndex % projectImages.length) + projectImages.length) % projectImages.length) + 1}/{projectImages.length})
             </span>
           )}
