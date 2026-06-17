@@ -24,6 +24,11 @@ const items = [
 ];
 
 export default function HomeClient({ information, clients, projects, tags, portfolio }) {
+  const isTouchDevice = useRef(false);
+  useEffect(() => {
+    isTouchDevice.current = window.matchMedia("(hover: none)").matches;
+  }, []);
+
   const [hovered, setHovered] = useState(null);
   const [hoverLocked, setHoverLocked] = useState(false);
   const [pinned, setPinned] = useState(null);
@@ -422,8 +427,8 @@ export default function HomeClient({ information, clients, projects, tags, portf
                 <span>, </span>
                 <span
                   className={`cursor-pointer ${selectedTag === tag._id || hoveredTag === tag._id ? "text-[var(--color-highlight)]" : ""}`}
-                  onMouseEnter={() => setHoveredTag(tag._id)}
-                  onMouseLeave={() => setHoveredTag(null)}
+                  onMouseEnter={() => { if (!isTouchDevice.current) setHoveredTag(tag._id); }}
+                  onMouseLeave={() => { if (!isTouchDevice.current) setHoveredTag(null); }}
                   onClick={() => toggleTag(tag._id)}
                 >
                   {tag.name}
@@ -512,8 +517,8 @@ export default function HomeClient({ information, clients, projects, tags, portf
                 <div
                   key={tag._id}
                   className="flex items-start gap-[0.053em] cursor-pointer overflow-visible"
-                  onMouseEnter={() => setHoveredTag(tag._id)}
-                  onMouseLeave={() => setHoveredTag(null)}
+                  onMouseEnter={() => { if (!isTouchDevice.current) setHoveredTag(tag._id); }}
+                  onMouseLeave={() => { if (!isTouchDevice.current) setHoveredTag(null); }}
                   onClick={() => toggleTag(tag._id)}
                 >
                   <span
@@ -591,8 +596,8 @@ export default function HomeClient({ information, clients, projects, tags, portf
               className={`cursor-pointer select-none transition-colors duration-150 ease-in-out ${
                 isHighlighted(item.big) ? "text-[var(--color-highlight)]" : ""
               }`}
-              onMouseEnter={() => { if (!hoverLocked) setHovered(item.big); }}
-              onMouseLeave={() => setHovered(null)}
+              onMouseEnter={() => { if (!isTouchDevice.current && !hoverLocked) setHovered(item.big); }}
+              onMouseLeave={() => { if (!isTouchDevice.current) setHovered(null); }}
               onClick={() => handleClick(item.big)}
             >
               {item.small}
