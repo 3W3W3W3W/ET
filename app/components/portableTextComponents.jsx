@@ -12,7 +12,7 @@ export const portableTextComponents = {
           {...(isExternal
             ? { target: "_blank", rel: "noopener noreferrer" }
             : {})}
-          className="underline underline-offset-[0.1em] transition-colors duration-150 ease-in-out hover:text-[var(--color-highlight)]"
+          className="no-underline transition-colors duration-150 ease-in-out hover:text-[var(--color-highlight)]"
         >
           {children}
         </a>
