@@ -9,6 +9,10 @@
   --color-highlight: #AD0900;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 html, body {
   margin: 0;
   padding: 0;

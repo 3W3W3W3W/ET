@@ -19,18 +19,21 @@ function Circle({ active }) {
 }
 
 const items = [
-  { big: "Information", small: "information" },
-  { big: "Archive", small: "archive" },
+  { big: "Information", small: "Information" },
+  { big: "Archive", small: "Archive" },
 ];
 
 export default function HomeClient({ information, clients, projects, tags, portfolio }) {
   const [hovered, setHovered] = useState(null);
+  const [hoverLocked, setHoverLocked] = useState(false);
   const [pinned, setPinned] = useState(null);
   // Information is an overlay that dims whatever is behind it (home carousel or
   // archive grid), so it's tracked separately from the Archive pin.
   const [infoPinned, setInfoPinned] = useState(false);
   const [selectedTag, setSelectedTag] = useState(null);
   const [hoveredTag, setHoveredTag] = useState(null);
+  const [expandedKey, setExpandedKey] = useState(null);
+  const expandedItemRefs = useRef({});
   const panelRef = useRef(null);
 
   // The home image sits in a fixed-size box sized to contain every image in the
@@ -49,6 +52,9 @@ export default function HomeClient({ information, clients, projects, tags, portf
   // the next project at the end, looping forever. Any user interaction stops it
   // permanently (until the page is reloaded).
   const [autoplay, setAutoplay] = useState(true);
+  const autoplayRef = useRef(true);
+  const [displayedImageIndex, setDisplayedImageIndex] = useState(0);
+  const displayedIndexTimer = useRef(null);
   // Two persistent image layers that never unmount; a transition swaps which one
   // is visible by cross-animating opacity, so there's never a blank seam frame.
   const [layerUrls, setLayerUrls] = useState([null, null]);
@@ -107,7 +113,7 @@ export default function HomeClient({ information, clients, projects, tags, portf
     window.addEventListener("resize", measureHomeBox);
     return () => window.removeEventListener("resize", measureHomeBox);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectIndex, projectImages.length]);
+  }, [projectIndex, projectImages.length, pinned]);
 
   // Images shown in the Archive grid — all of them, or filtered by selected tag.
   const archiveImages = (
@@ -134,19 +140,21 @@ export default function HomeClient({ information, clients, projects, tags, portf
   // Preload every Archive and carousel image once on mount so the grid (shown
   // on hover) and the home slideshow are instant — a decoded image sizes
   // immediately, avoiding a reflow when it swaps in. Uses off-DOM Image objects.
+  // Keep a module-level cache so images are never GC'd or cancelled between renders.
+  const preloadCache = useRef(new Map());
   useEffect(() => {
     const sources = [...(projects ?? []), ...(portfolio?.projects ?? [])];
     const urls = sources.flatMap((p) =>
       (p.images ?? []).map((img) => img?.url).filter(Boolean)
     );
-    const imgs = urls.map((url) => {
+    const cache = preloadCache.current;
+    urls.forEach((url) => {
+      if (cache.has(url)) return;
       const im = new Image();
       im.src = url;
-      return im;
+      im.decode().catch(() => {});
+      cache.set(url, im);
     });
-    return () => {
-      imgs.forEach((im) => (im.src = ""));
-    };
   }, [projects, portfolio]);
 
   useEffect(() => {
@@ -162,6 +170,13 @@ export default function HomeClient({ information, clients, projects, tags, portf
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [pinned, infoPinned, projectPinned]);
+
+  // When expanded view opens, scroll the clicked image into the center of the viewport.
+  useEffect(() => {
+    if (!expandedKey) return;
+    const el = expandedItemRefs.current[expandedKey];
+    if (el) el.scrollIntoView({ behavior: "instant", block: "center" });
+  }, [expandedKey]);
 
   // Scrolling anywhere on the page swaps through the active project's images,
   // looping — except when a text overlay is up (hovered/pinned), in which case
@@ -234,22 +249,44 @@ export default function HomeClient({ information, clients, projects, tags, portf
     return () => clearTimeout(t);
   }, [autoplay, imageIndex, projectIndex, projectImages.length]);
 
-  // Any user interaction stops the slideshow for good.
+  // In autoplay mode: fade the count out, swap the number at the midpoint, fade back in.
+  const [countVisible, setCountVisible] = useState(true);
   useEffect(() => {
-    if (!autoplay) return;
-    const stop = () => setAutoplay(false);
-    const opts = { passive: true };
-    window.addEventListener("wheel", stop, opts);
-    window.addEventListener("pointerdown", stop, opts);
-    window.addEventListener("touchstart", stop, opts);
-    window.addEventListener("keydown", stop, opts);
-    return () => {
-      window.removeEventListener("wheel", stop);
-      window.removeEventListener("pointerdown", stop);
-      window.removeEventListener("touchstart", stop);
-      window.removeEventListener("keydown", stop);
+    clearTimeout(displayedIndexTimer.current);
+    if (autoplayRef.current) {
+      setCountVisible(false);
+      displayedIndexTimer.current = setTimeout(() => {
+        setDisplayedImageIndex(imageIndex);
+        setCountVisible(true);
+      }, 700);
+    } else {
+      setDisplayedImageIndex(imageIndex);
+    }
+    return () => clearTimeout(displayedIndexTimer.current);
+  }, [imageIndex]);
+
+  // Any user interaction pauses the slideshow; it resumes after 5s of inactivity.
+  useEffect(() => {
+    let resumeTimer = null;
+    const pause = () => {
+      autoplayRef.current = false;
+      setAutoplay(false);
+      clearTimeout(resumeTimer);
+      resumeTimer = setTimeout(() => { autoplayRef.current = true; setAutoplay(true); }, 5000);
     };
-  }, [autoplay]);
+    const opts = { passive: true };
+    window.addEventListener("wheel", pause, opts);
+    window.addEventListener("pointerdown", pause, opts);
+    window.addEventListener("touchstart", pause, opts);
+    window.addEventListener("keydown", pause, opts);
+    return () => {
+      clearTimeout(resumeTimer);
+      window.removeEventListener("wheel", pause);
+      window.removeEventListener("pointerdown", pause);
+      window.removeEventListener("touchstart", pause);
+      window.removeEventListener("keydown", pause);
+    };
+  }, []);
 
   // When the home image changes, keep the outgoing image mounted underneath for
   // the fade duration so the new one can crossfade over it.
@@ -303,12 +340,15 @@ export default function HomeClient({ information, clients, projects, tags, portf
 
   // Only one section can be pinned at a time: pinning one clears the other.
   const handleClick = (label) => {
+    setHoverLocked(true);
+    setHovered(null);
     if (label === "Information") {
       setInfoPinned((prev) => !prev);
       setPinned(null);
     } else {
       setPinned((prev) => (prev === label ? null : label));
       setInfoPinned(false);
+      setExpandedKey(null);
     }
   };
 
@@ -331,40 +371,71 @@ export default function HomeClient({ information, clients, projects, tags, portf
       {homeImage?.url && pinned !== "Archive" && (
         <div
           onClick={handleBodyClick}
-          className={`fixed top-0 left-0 right-0 bottom-[30px] z-0 flex items-center justify-center transition-opacity duration-150 ${
+          className={`fixed top-[30px] left-0 right-0 bottom-0 z-0 flex items-center justify-center transition-opacity duration-150 ${
             active ? "opacity-20 pointer-events-none" : "opacity-100"
           } ${projectCount > 1 ? "cursor-pointer" : ""}`}
         >
-          <div className="flex flex-col">
-            <div ref={homeBoxRef} className="relative">
-              {[0, 1].map((i) =>
-                layerUrls[i] ? (
-                  <img
-                    key={i}
-                    src={layerUrls[i]}
-                    alt=""
-                    aria-hidden={visibleLayer !== i}
-                    decoding="sync"
-                    className={`absolute inset-0 w-full h-full object-contain object-center transition-opacity ease-in-out duration-[1400ms] ${
-                      visibleLayer === i
-                        ? "opacity-100 delay-[1400ms]"
-                        : "opacity-0 delay-0"
-                    }`}
-                  />
-                ) : null
-              )}
-            </div>
-            {activeProject?.title && (
-              <div className="mt-[4px] leading-none text-[var(--color-main)] select-none">
-                {activeProject.title}
-              </div>
+          <div ref={homeBoxRef} className="relative">
+            {[0, 1].map((i) =>
+              layerUrls[i] ? (
+                <img
+                  key={i}
+                  src={layerUrls[i]}
+                  alt=""
+                  aria-hidden={visibleLayer !== i}
+                  decoding="sync"
+                  className={`absolute inset-0 w-full h-full object-contain object-center transition-opacity ease-in-out duration-[1400ms] ${
+                    visibleLayer === i
+                      ? "opacity-100 delay-[1400ms]"
+                      : "opacity-0 delay-0"
+                  }`}
+                />
+              ) : null
             )}
           </div>
         </div>
       )}
 
+      {activeProject?.title && pinned !== "Archive" && (
+        <div className={`fixed bottom-0 left-0 right-0 h-[30px] px-[15px] flex items-center justify-between text-white z-20 select-none pointer-events-none transition-opacity duration-150 ${active === "Information" ? "opacity-20" : "opacity-100"}`}>
+          <span>{activeProject.title}</span>
+          {projectImages.length > 0 && (
+            <span className={`transition-opacity duration-300 ${countVisible ? "opacity-100" : "opacity-0"}`}>
+              ({(((displayedImageIndex % projectImages.length) + projectImages.length) % projectImages.length) + 1}/{projectImages.length})
+            </span>
+          )}
+        </div>
+      )}
+
+      {pinned === "Archive" && tags?.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 h-[30px] px-[15px] flex items-center z-20 select-none">
+          <span className="text-white">
+            <span>Type:</span>
+            <span
+              className={`cursor-pointer ml-[15px] ${selectedTag === null ? "text-[var(--color-highlight)]" : "hover:text-[var(--color-highlight)]"}`}
+              onClick={() => setSelectedTag(null)}
+            >
+              All
+            </span>
+            {tags.map((tag) => (
+              <span key={tag._id}>
+                <span>, </span>
+                <span
+                  className={`cursor-pointer ${selectedTag === tag._id || hoveredTag === tag._id ? "text-[var(--color-highlight)]" : ""}`}
+                  onMouseEnter={() => setHoveredTag(tag._id)}
+                  onMouseLeave={() => setHoveredTag(null)}
+                  onClick={() => toggleTag(tag._id)}
+                >
+                  {tag.name}
+                </span>
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
+
       {infoActive && (
-        <div ref={panelRef} className={`fixed top-[15px] left-[15px] right-[15px] max-h-[calc(100vh-45px)] pb-[0.25em] text-white text-[clamp(8.5px,3.8vw,40px)] leading-none tracking-[-0.03em] overflow-y-auto z-10 ${infoPinned ? "" : "pointer-events-none [&_*]:pointer-events-none"}`}>
+        <div ref={panelRef} className={`fixed top-[30px] left-[15px] right-[15px] bottom-[30px] flex items-center overflow-y-auto text-white text-[15px] leading-none tracking-[-0.03em] z-10 ${infoPinned ? "" : "pointer-events-none [&_*]:pointer-events-none"}`}>
           <div>
               {information?.body && (
                 <PortableText
@@ -394,15 +465,39 @@ export default function HomeClient({ information, clients, projects, tags, portf
       )}
 
       {archiveActive && archiveImages.length > 0 && (
-        <div className={`fixed top-[15px] left-[15px] right-[15px] max-h-[calc(100vh-45px)] overflow-y-auto grid grid-cols-10 gap-[15px] z-0 transition-opacity duration-150 ${infoActive ? "opacity-20 pointer-events-none" : "opacity-100"} ${pinned === "Archive" && !infoActive ? "" : "pointer-events-none"}`}>
-          {archiveImages.map((img) => (
-            <img
-              key={`${img.projectId}-${img._key}`}
-              src={img.url}
-              alt={img.title || ""}
-              className="w-full h-auto"
-            />
-          ))}
+        <div className={`fixed top-[45px] left-0 right-0 bottom-0 overflow-y-auto z-0 transition-opacity duration-150 ${infoActive ? "opacity-20 pointer-events-none" : "opacity-100"} ${pinned === "Archive" && !infoActive ? "" : "pointer-events-none"}`}>
+          {expandedKey ? (
+            <div className="flex flex-col items-center gap-[30px] py-[30px]">
+              {archiveImages.map((img) => {
+                const key = `${img.projectId}-${img._key}`;
+                return (
+                  <img
+                    key={key}
+                    ref={(el) => { expandedItemRefs.current[key] = el; }}
+                    src={img.url}
+                    alt={img.title || ""}
+                    onClick={() => setExpandedKey(null)}
+                    className="max-w-[80vw] max-h-[80vh] w-auto h-auto object-contain cursor-pointer"
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-[15px] p-[15px]">
+              {archiveImages.map((img) => {
+                const key = `${img.projectId}-${img._key}`;
+                return (
+                  <img
+                    key={key}
+                    src={img.url}
+                    alt={img.title || ""}
+                    onClick={() => setExpandedKey(key)}
+                    className="w-full h-auto cursor-pointer"
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -484,41 +579,44 @@ export default function HomeClient({ information, clients, projects, tags, portf
       </div>
       */}
 
-      <footer className="fixed bottom-0 left-0 right-0 h-[30px] px-[15px] flex items-center justify-between text-[var(--color-main)] z-20">
-        <div className="flex gap-[15px]">
-          {items.map((item) => (
+      <header
+        className="fixed top-0 left-0 right-0 h-[30px] px-[15px] flex items-center justify-between text-white z-20"
+        onMouseLeave={() => setHoverLocked(false)}
+      >
+        <div>Eric Tsui</div>
+        <div className="flex items-center gap-[15px]">
+          {!(pinned || infoPinned || projectPinned) && items.map((item) => (
             <span
               key={item.small}
               className={`cursor-pointer select-none transition-colors duration-150 ease-in-out ${
                 isHighlighted(item.big) ? "text-[var(--color-highlight)]" : ""
               }`}
-              onMouseEnter={() => setHovered(item.big)}
+              onMouseEnter={() => { if (!hoverLocked) setHovered(item.big); }}
               onMouseLeave={() => setHovered(null)}
               onClick={() => handleClick(item.big)}
             >
               {item.small}
             </span>
           ))}
+          {(pinned || infoPinned || projectPinned) && (
+            <button
+              type="button"
+              onClick={() => {
+                setPinned(null);
+                setInfoPinned(false);
+                setProjectPinned(false);
+                setImgHovered(false);
+                setExpandedKey(null);
+                setHovered(null);
+                setHoverLocked(true);
+              }}
+              className="cursor-pointer select-none bg-[var(--color-highlight)] text-black px-[15px] leading-none self-stretch -mr-[15px] h-[30px]"
+            >
+              close
+            </button>
+          )}
         </div>
-        {pinned || infoPinned || projectPinned ? (
-          <button
-            type="button"
-            onClick={() => {
-              setPinned(null);
-              setInfoPinned(false);
-              setProjectPinned(false);
-              setImgHovered(false);
-            }}
-            className="cursor-pointer select-none bg-[var(--color-highlight)] text-black px-[15px] leading-none self-stretch -mr-[15px] -mb-0 h-[30px]"
-          >
-            close
-          </button>
-        ) : (
-          <div className="cursor-pointer select-none transition-colors duration-150 ease-in-out hover:text-[var(--color-highlight)]">
-            ©{new Date().getFullYear()} Eric Tsui
-          </div>
-        )}
-      </footer>
+      </header>
     </main>
   );
 }
