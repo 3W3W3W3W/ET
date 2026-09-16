@@ -10,7 +10,7 @@ function Circle({ active }) {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="-1 -1 27 27"
-      className={`w-[0.131em] h-[0.131em] shrink-0 overflow-visible transition-colors duration-150 ease-in-out ${
+      className={`w-[0.131em] h-[0.131em] shrink-0 overflow-visible transition-colors duration-[1600ms] ease-out ${
         active ? "text-[var(--color-highlight)]" : "text-[var(--color-secondary)]"
       }`}
     >
@@ -942,7 +942,7 @@ export default function HomeClient({ information, clients, projects, tags }) {
             <Fragment key={entry.key}>
               <span
                 data-menu-item=""
-                className={`pointer-events-auto opacity-80 text-[15px] leading-none font-menu tracking-[-0.03em] cursor-pointer select-none transition-colors duration-200 ease-out ${
+                className={`pointer-events-auto opacity-80 text-[15px] leading-none font-menu tracking-[-0.03em] cursor-pointer select-none transition-colors duration-[1600ms] ease-out ${
                   entry.active ? "text-[var(--color-highlight)]" : ""
                 }`}
                 onMouseEnter={entry.onMouseEnter}
@@ -1017,7 +1017,7 @@ export default function HomeClient({ information, clients, projects, tags }) {
           ref={wordmarkRef}
           href="/"
           onClick={goHome}
-          className="animate-fade-in pointer-events-auto inline-flex items-center justify-center bg-[var(--color-bg)] p-[3px] -m-[3px] text-[var(--color-text-80)] text-[15px] leading-none font-menu tracking-[-0.03em] select-none transition-colors duration-200 ease-out md:hover:text-[var(--color-highlight)]"
+          className="animate-fade-in pointer-events-auto inline-flex items-center justify-center bg-[var(--color-bg)] p-[3px] -m-[3px] text-[var(--color-text-80)] text-[15px] leading-none font-menu tracking-[-0.03em] select-none transition-colors duration-[1600ms] ease-out md:hover:text-[var(--color-highlight)]"
         >
           {/* The labels have no descenders, so the font's descent space leaves the
               ink sitting high in the plate. Nudge it down to optically centre it
@@ -1077,7 +1077,7 @@ export default function HomeClient({ information, clients, projects, tags }) {
               ref={rightAnchorRef}
               type="button"
               onClick={returnToIndex}
-              className="pointer-events-auto inline-flex items-center justify-center bg-[var(--color-bg)] p-[3px] -m-[3px] text-[var(--color-text-80)] text-[15px] leading-none font-menu tracking-[-0.03em] cursor-pointer select-none transition-colors duration-200 ease-out md:hover:text-[var(--color-highlight)]"
+              className="pointer-events-auto inline-flex items-center justify-center bg-[var(--color-bg)] p-[3px] -m-[3px] text-[var(--color-text-80)] text-[15px] leading-none font-menu tracking-[-0.03em] cursor-pointer select-none transition-colors duration-[1600ms] ease-out md:hover:text-[var(--color-highlight)]"
             >
               <span className="block translate-y-[1.375px]">
                 {archiveActive ? "Index" : "Close"}
