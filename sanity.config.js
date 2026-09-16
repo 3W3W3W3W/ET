@@ -11,7 +11,7 @@ const SETTINGS_SINGLETONS = [
   { id: "clients", title: "Clients", schemaType: "clients" },
 ];
 
-const SINGLETON_TYPES = [...SETTINGS_SINGLETONS.map((s) => s.schemaType), "portfolio"];
+const SINGLETON_TYPES = SETTINGS_SINGLETONS.map((s) => s.schemaType);
 
 export default defineConfig({
   name: "default",
@@ -46,12 +46,6 @@ export default defineConfig({
                   ])
               ),
             S.documentTypeListItem("project").title("Archive"),
-            S.listItem()
-              .title("Portfolio")
-              .id("portfolio")
-              .child(
-                S.document().schemaType("portfolio").documentId("portfolio")
-              ),
           ]),
     }),
     media(),

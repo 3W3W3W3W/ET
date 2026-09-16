@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "./**/*.{js,jsx,ts,tsx}";
 
 :root {
   --font-primary: Arial, sans-serif;
@@ -6,7 +7,31 @@
 
   --color-main: #4a4a4a;
   --color-secondary: #181818;
-  --color-highlight: #AD0900;
+  --color-highlight: #590000;
+  --color-bg: #0a0205;
+  --color-bg-75: rgb(10 2 5 / 0.75);
+  --color-bg-50: rgb(10 2 5 / 0.5);
+  --color-bg-80: rgb(10 2 5 / 0.8);
+  --color-text: #bfbfbf;
+  /* The corner-line script reads this one. getPropertyValue returns the literal
+     token, so it can't be `var(--color-text)` — it has to carry the same value. */
+  --color-accent: #bfbfbf;
+  /* Faded text colours, for labels that carry a background: dimming those with
+     opacity would dim the background plate along with the type. */
+  --color-text-80: rgb(191 191 191 / 0.8);
+  --color-text-50: rgb(191 191 191 / 0.5);
+  --font-menu-stack: var(--font-menu), "Times New Roman", Times, serif;
+
+  /* Vertical position of the bar, measured from the top of the viewport. The bar
+     is 30px tall and is centred on this line, and the Information column derives
+     its offset from it. */
+  --bar-top: 50%;
+
+  /* Gap between the wordmark and the first line of the Information column: the
+     bar row's half-leading beneath its 15px text, plus the column's own 15px top
+     padding. Mirrored as the column's bottom padding so the text sits with equal
+     space above and below. */
+  --info-gap: calc(15px + (30px - 15px) / 2);
 }
 
 html {
@@ -18,12 +43,60 @@ html, body {
   overflow: hidden;
   margin: 0;
   padding: 0;
-  background-color: #000;
-  color: #fff;
+  background-color: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-primary);
   font-weight: 400;
-  font-size: 11px;
+  font-size: 13px;
+  /* No text selection anywhere on the site. */
+  user-select: none;
+  -webkit-user-select: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* Runs on first paint, so the wordmark appears without waiting for hydration. */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 700ms ease-out both;
+}
+
+/* The credit line swaps its label on hover; the two states are stacked so the
+   swap doesn't shift anything around it. */
+#final-research {
+  position: relative;
+  display: inline-block;
+}
+
+.final-research-hover {
+  /* Centred on the default label rather than pinned to its left edge, so the
+     swap happens in place and the corner lines frame the same spot. */
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* The master image arriving over the blurred duplicate. */
+.animate-fade-in-quick {
+  animation: fade-in 400ms linear both;
+}
+
+.font-menu {
+  font-family: var(--font-menu-stack);
+}
+
+/* The TimesNow face is only supplied as an italic, so an upright setting uses the
+   stack's default roman serif instead of letting the browser slant or synthesise. */
+.font-menu-roman {
+  font-family: "Times New Roman", Times, serif;
+  font-style: normal;
 }
