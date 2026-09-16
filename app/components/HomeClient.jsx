@@ -127,7 +127,18 @@ export default function HomeClient({ information, clients, projects, tags }) {
   // Every image, always. Filtering by tag fades the tiles that don't match back
   // to a faint 5% rather than dropping them: they keep their place in the layout,
   // so the grid never reloads, rebuilds or shifts.
-  const galleryImages = (projects ?? []).flatMap((p) =>
+  // A project switched off in the studio drops out of the grid and the unfiltered
+  // Archive, but choosing its tag from the menu brings it back. Keyed on the
+  // committed filter rather than the hovered one, so previewing a tag only changes
+  // what is lit, never what is in the layout. Older documents have no field at
+  // all, so only an explicit false hides one.
+  const galleryImages = (projects ?? [])
+    .filter(
+      (p) =>
+        p.visible !== false ||
+        (selectedTag && (p.tags ?? []).some((t) => t._id === selectedTag))
+    )
+    .flatMap((p) =>
     (p.images ?? [])
       .filter((img) => img?.url)
       .map((img) => ({

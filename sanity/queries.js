@@ -13,6 +13,7 @@ export const tagsQuery = defineQuery(`*[_type == "tag"] | order(name asc){
 export const projectsQuery = defineQuery(`*[_type == "project"] | order(order asc, title asc){
   _id,
   title,
+  "visible": coalesce(visible, true),
   "slug": slug.current,
   "tags": tags[]->{ _id, name, "slug": slug.current },
   description,

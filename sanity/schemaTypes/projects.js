@@ -17,6 +17,14 @@ export const projects = {
       validation: (Rule) => Rule.required(),
     },
     {
+      name: "visible",
+      title: "Show in grid",
+      type: "boolean",
+      description:
+        "On by default. Turn off to hide this project from the grid and the Archive without deleting it.",
+      initialValue: true,
+    },
+    {
       name: "order",
       title: "Order",
       type: "number",
